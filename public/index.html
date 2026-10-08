@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ZEN | YouTube | Arama</title>
+  <meta name="description" content="YouTube ve web içeriklerini anında bulun, altyazılarını çıkartın ve yapay zeka ile özetleyin.">
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Remix Icon -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+  
+  <!-- Confetti for Easter Egg -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+  <div class="glow-orb orb-3"></div>
+  <div class="noise-overlay"></div>
+
+  <!-- Main Container -->
+  <div class="app-wrapper">
+    
+    <!-- Navigation Header -->
+    <header class="navbar">
+      <div class="brand-group">
+        <div class="brand-logo">
+          <i class="ri-play-mini-fill"></i>
+          <span class="pulse-dot"></span>
+        </div>
+        <div class="brand-text-cycling">
+          <span class="brand-word word-zen">ZEN</span>
+          <span class="brand-sep">|</span>
+          <span class="brand-word word-yt">YouTube</span>
+          <span class="brand-sep">|</span>
+          <span class="brand-word word-arama">Arama</span>
+        </div>
+        <div class="brand-date-badge" id="currentDateBadge">
+          <!-- Dinamik Tarih: 1 Ocak 2020 Pazartesi formatında -->
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Tiny Icon Button for API Settings -->
+        <button id="apiKeyBtn" class="tiny-icon-btn" title="API Ayarları">
+          <i class="ri-key-2-line"></i>
+          <span class="status-indicator active" id="apiStatusDot"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="hero-section">
+      <!-- Daktilo (Typewriter) Headline -->
+      <h1 class="hero-headline typewriter-container">
+        <span id="typewriterText" class="gradient-text">İzlemeye Vaktin Yok mu?</span>
+        <span class="typewriter-cursor">|</span>
+      </h1>
+
+      <p class="hero-action-prompt">
+        İstediğin konuyu arat ya da link yapıştır 👇
+      </p>
+
+      <!-- Search Input Container -->
+      <section class="search-container">
+        <form id="searchForm" class="search-box">
+          <div class="search-icon-wrap">
+            <i class="ri-search-2-line"></i>
+          </div>
+          <textarea 
+            id="queryInput" 
+            rows="1" 
+            placeholder="Bir konu yazın veya YouTube / web linki yapıştırın..." 
+            required></textarea>
+          
+          <div class="input-actions">
+            <button type="button" id="clearBtn" class="action-icon-btn hidden" title="Temizle">
+              <i class="ri-close-line"></i>
+            </button>
+            <button type="submit" id="submitBtn" class="submit-action-btn">
+              <span>Analiz Et</span>
+              <i class="ri-arrow-right-line"></i>
+            </button>
+          </div>
+        </form>
+
+        <!-- Quick Suggestions -->
+        <div class="suggestion-chips">
+          <button type="button" class="chip" data-query="Kuantum dolanıklığı nedir ve nobel ödülü nasıl alındı">Kuantum Dolanıklığı</button>
+          <button type="button" class="chip" data-query="Yapay zeka ajanları AI agents çalışma mantığı">AI Ajanları</button>
+          <button type="button" class="chip" data-query="gündem">Gündem Haberleri</button>
+          <button type="button" class="chip" data-query="zen son parçalar">ZEN Records 🎵</button>
+          <button type="button" class="chip" data-query="https://www.youtube.com/watch?v=UkJPbFx8YFU">Örnek Video Linki</button>
+        </div>
+      </section>
+
+      <!-- Easter Egg Special Creator Showcase Card (Initially Hidden) -->
+      <div id="zenEasterEggCard" class="glass-card zen-easter-egg-card hidden">
+        <div class="zen-egg-header">
+          <div class="zen-egg-badge"><i class="ri-vip-crown-fill"></i> RESMİ KANAL ÖZEL KEŞİF</div>
+          <button type="button" id="closeZenEggBtn" class="close-icon"><i class="ri-close-line"></i></button>
+        </div>
+        <div class="zen-egg-body">
+          <div class="zen-artist-meta">
+            <div class="zen-artist-avatar">
+              <i class="ri-disc-fill"></i>
+            </div>
+            <div>
+              <h3 class="zen-artist-title">ZEN-Record • Ömer Erzen</h3>
+              <p class="zen-artist-desc">Müzik Prodüksiyonu, Podcast Serisi ve Özgün Eserler</p>
+            </div>
+          </div>
+          
+          <!-- Category Pills -->
+          <div class="zen-genre-tags">
+            <span>Hiciv</span>
+            <span>Marşlar</span>
+            <span>Destanlar</span>
+            <span>Şiirler</span>
+            <span>Coverlar</span>
+            <span>Remixler</span>
+            <span>Türk Halk Müziği</span>
+            <span>Klasik Türk Musikisi</span>
+            <span>Türk Lehçeleri</span>
+          </div>
+
+          <!-- Links Grid -->
+          <div class="zen-links-grid">
+            <a href="https://www.youtube.com/@ZEN-Record" target="_blank" rel="noopener noreferrer" class="zen-social-link yt">
+              <i class="ri-youtube-fill"></i>
+              <span>YouTube Kanalı (@ZEN-Record)</span>
+              <i class="ri-arrow-right-up-line"></i>
+            </a>
+            <a href="https://podcasters.spotify.com/pod/show/zenpod" target="_blank" rel="noopener noreferrer" class="zen-social-link pod">
+              <i class="ri-mic-fill"></i>
+              <span>ZEN Podcast (Podcasters)</span>
+              <i class="ri-arrow-right-up-line"></i>
+            </a>
+            <a href="https://open.spotify.com/show/6v8PZOtwTlp5FNbg2a30TC" target="_blank" rel="noopener noreferrer" class="zen-social-link spot">
+              <i class="ri-spotify-fill"></i>
+              <span>Spotify Podcast Serisi</span>
+              <i class="ri-arrow-right-up-line"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-step Loading Animation (Initially Hidden) -->
+      <section id="loadingSection" class="loading-panel hidden">
+        <div class="loader-spinner">
+          <div class="spinner-ring"></div>
+          <i class="ri-cpu-line spinner-icon"></i>
+        </div>
+        <div class="loader-steps">
+          <div class="step-item active" id="step1">
+            <i class="ri-checkbox-circle-fill"></i>
+            <span>Sorgu Akıllıca Optimize Ediliyor</span>
+          </div>
+          <div class="step-item" id="step2">
+            <i class="ri-checkbox-circle-fill"></i>
+            <span>YouTube Taranıyor & En İdeal Video Seçiliyor</span>
+          </div>
+          <div class="step-item" id="step3">
+            <i class="ri-checkbox-circle-fill"></i>
+            <span>Altyazı (Transcript) DownSub Mimarisiyle Çekiliyor</span>
+          </div>
+          <div class="step-item" id="step4">
+            <i class="ri-checkbox-circle-fill"></i>
+            <span>Gemini 3.8 Flash Özet ve Zaman Çizelgesi Üretiyor</span>
+          </div>
+        </div>
+        <p class="loading-subtext">Videonun uzunluğuna göre analiz ediliyor...</p>
+      </section>
+
+      <!-- Error Card (Initially Hidden) -->
+      <div id="errorCard" class="error-banner hidden">
+        <i class="ri-error-warning-fill"></i>
+        <div class="error-content">
+          <h4 id="errorTitle">İşlem Başarısız Oldu</h4>
+          <p id="errorMessage"></p>
+        </div>
+        <button id="closeErrorBtn" class="close-icon"><i class="ri-close-line"></i></button>
+      </div>
+
+      <!-- Results Section (Initially Hidden) -->
+      <section id="resultSection" class="results-wrapper hidden">
+        
+        <!-- Query Optimization Banner (If applicable) -->
+        <div id="queryOptimizationPill" class="optimized-query-pill hidden">
+          <i class="ri-sparkle-line"></i>
+          <span>Belirlenen YouTube Arama Terimi:</span>
+          <strong id="optimizedQueryText"></strong>
+        </div>
+
+        <div class="results-grid">
+          
+          <!-- Left Column: Video Information & DownSub Subtitle Downloads -->
+          <div class="video-card-col">
+            <div class="glass-card video-showcase-card">
+              <div class="thumbnail-wrapper">
+                <img id="videoThumb" src="" alt="Video Thumbnail" loading="lazy">
+                <div class="duration-badge" id="videoDuration">00:00</div>
+                <a id="videoDirectLink" href="#" target="_blank" rel="noopener noreferrer" class="play-overlay">
+                  <div class="play-btn-circle">
+                    <i class="ri-play-fill"></i>
+                  </div>
+                </a>
+              </div>
+
+              <div class="video-info-body">
+                <h3 id="videoTitle" class="video-title">Video Başlığı</h3>
+                
+                <div class="video-meta-row">
+                  <span class="meta-item author"><i class="ri-user-smile-line"></i> <span id="videoAuthor">Kanal</span></span>
+                  <span class="meta-item views" id="videoViewsWrap"><i class="ri-eye-line"></i> <span id="videoViews">0</span> görüntüleme</span>
+                  <span class="meta-item subtitles"><i class="ri-subtitles-line"></i> <span id="transcriptLines">0</span> satır altyazı</span>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <!-- Action Buttons: DownSub downloads & Watch -->
+                <div class="download-actions-group">
+                  <span class="group-label">Altyazı İşlemleri:</span>
+                  <div class="btn-grid">
+                    <a id="downloadSrtBtn" href="#" class="tool-btn secondary">
+                      <i class="ri-file-text-line"></i>
+                      <span>.SRT İndir</span>
+                    </a>
+                    <a id="downloadTxtBtn" href="#" class="tool-btn secondary">
+                      <i class="ri-file-code-line"></i>
+                      <span>.TXT İndir</span>
+                    </a>
+                  </div>
+
+                  <a id="watchOnYoutubeBtn" href="#" target="_blank" rel="noopener noreferrer" class="tool-btn primary full-width">
+                    <i class="ri-youtube-fill"></i>
+                    <span>YouTube'da İzle</span>
+                    <i class="ri-external-link-line end-icon"></i>
+                  </a>
+
+                  <!-- "Metni Oku" toggle button -->
+                  <button type="button" id="toggleRawTextBtn" class="tool-btn secondary full-width metin-oku-btn">
+                    <i class="ri-book-open-line"></i>
+                    <span>Metni Oku</span>
+                    <i class="ri-arrow-down-s-line end-icon" id="toggleRawArrow"></i>
+                  </button>
+
+                  <!-- Expandable Raw Transcript Reader -->
+                  <div id="rawTextContainer" class="raw-text-panel hidden">
+                    <div class="raw-text-header">
+                      <span>Ham Konuşma Metni</span>
+                      <button type="button" id="copyRawBtn" class="tiny-copy-btn" title="Ham Metni Kopyala">
+                        <i class="ri-file-copy-line"></i>
+                      </button>
+                    </div>
+                    <div id="rawTextContent" class="raw-text-content">
+                      <!-- Metin buraya akacak -->
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- Alternative / Related Videos -->
+            <div id="altVideosCard" class="glass-card alt-videos-card hidden">
+              <h4 class="card-subtitle"><i class="ri-film-line"></i> Diğer İlgili Videolar</h4>
+              <div id="altVideosList" class="alt-videos-list">
+                <!-- Injected via JavaScript with Dropdown -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: AI Analysis & Summary -->
+          <div class="summary-card-col">
+            <div class="glass-card summary-main-card">
+              
+              <!-- Card Header with Copy Actions -->
+              <div class="summary-card-header">
+                <div class="header-title-wrap">
+                  <div class="ai-badge">
+                    <i class="ri-sparkle-fill"></i>
+                    <span>Özet & Çıkarımlar</span>
+                  </div>
+                </div>
+
+                <div class="header-actions-right">
+                  <button id="copySummaryBtn" class="icon-text-btn" title="Özeti Kopyala">
+                    <i class="ri-file-copy-line"></i>
+                    <span>Kopyala</span>
+                  </button>
+                  <button id="downloadSummaryMdBtn" class="icon-text-btn" title="Markdown Olarak İndir">
+                    <i class="ri-download-2-line"></i>
+                    <span>Markdown</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Executive Summary -->
+              <div class="summary-section executive-box">
+                <div class="section-tag executive-tag"><i class="ri-flashlight-line"></i> Yönetici Özeti</div>
+                <p id="summaryExecutive" class="executive-text"></p>
+              </div>
+
+              <!-- Key Takeaway -->
+              <div class="summary-section takeaway-box" id="takeawayBox">
+                <div class="section-tag takeaway-tag"><i class="ri-lightbulb-line"></i> En Büyük Çıkarım</div>
+                <blockquote id="summaryTakeaway" class="takeaway-text"></blockquote>
+              </div>
+
+              <!-- Key Points List -->
+              <div class="summary-section">
+                <div class="section-tag points-tag"><i class="ri-list-check-2"></i> Temel Konu Başlıkları</div>
+                <ul id="summaryKeyPoints" class="bullet-list"></ul>
+              </div>
+
+              <!-- Timestamped Timeline -->
+              <div class="summary-section" id="timelineSection">
+                <div class="section-tag timeline-tag"><i class="ri-time-line"></i> Önemli Anlar & Zaman Damgaları</div>
+                <div id="summaryTimeline" class="timeline-container"></div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <p class="brand-signature">OMERZEN © Productions 2026</p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- API Key Modal Dialog -->
+  <div id="apiModal" class="modal-backdrop hidden">
+    <div class="modal-box glass-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon"><i class="ri-key-2-fill"></i></div>
+          <h3>Gemini API Yönetimi</h3>
+        </div>
+        <button id="closeModalBtn" class="close-icon"><i class="ri-close-line"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-desc">
+          Sistemde Gemini 3.8 Flash otomatik olarak aktiftir. 
+          Dilerseniz kendi özel Google AI Studio API anahtarınızı da ekleyebilirsiniz.
+        </p>
+
+        <div class="form-group">
+          <label for="apiKeyInput">Özel Gemini API Anahtarınız (İsteğe bağlı):</label>
+          <div class="input-with-icon">
+            <i class="ri-lock-line"></i>
+            <input type="password" id="apiKeyInput" placeholder="Varsayılan entegre anahtar aktif..." autocomplete="off">
+            <button type="button" id="toggleApiVisibility" class="toggle-vis"><i class="ri-eye-line"></i></button>
+          </div>
+          <span class="helper-text">
+            Kendi anahtarınızı girerseniz öncelikli olarak o kullanılır.
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="clearKeyBtn" class="tool-btn secondary">Varsayılana Sıfırla</button>
+        <button id="saveKeyBtn" class="tool-btn primary">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="toast-popup hidden">
+    <i class="ri-check-line"></i>
+    <span id="toastMsg">İşlem başarılı</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
