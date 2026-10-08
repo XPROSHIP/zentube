@@ -51,9 +51,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeDlModalBtn = document.getElementById('closeDlModalBtn');
   const closeDlModalFooterBtn = document.getElementById('closeDlModalFooterBtn');
   const dlVideoTitle = document.getElementById('dlVideoTitle');
+  const dlIframe = document.getElementById('dlIframe');
   const dlOptSavefrom = document.getElementById('dlOptSavefrom');
-  const dlOptNotube = document.getElementById('dlOptNotube');
   const copyVideoUrlForNewpipe = document.getElementById('copyVideoUrlForNewpipe');
+  const directServerDlBtn = document.getElementById('directServerDlBtn');
+  const directServerDlText = document.getElementById('directServerDlText');
+  const dlStatusIndicator = document.getElementById('dlStatusIndicator');
+  const streamDlLink = document.getElementById('streamDlLink');
+
+  // No Caption Notice & Meta
+  const noCaptionNotice = document.getElementById('noCaptionNotice');
+  const transcriptMetaItem = document.getElementById('transcriptMetaItem');
 
   // Raw Text Toggle ("Metni Oku")
   const toggleRawTextBtn = document.getElementById('toggleRawTextBtn');
@@ -154,8 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const now = ctx.currentTime;
 
       if (isEasterEgg) {
-        // Triumphant VIP fanfare chime for ZEN-Record
-        const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const freqs = [523.25, 659.25, 783.99, 1046.50];
         freqs.forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -170,7 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
           osc.stop(start + 0.45);
         });
       } else {
-        // Crystal notification chime
         const osc1 = ctx.createOscillator();
         const gain1 = ctx.createGain();
         osc1.type = 'sine';
@@ -244,23 +250,75 @@ document.addEventListener('DOMContentLoaded', () => {
     apiModal.classList.add('hidden');
   });
 
-  // ---------------- 5. Video İndirme Modalı ----------------
-  downloadVideoBtn.addEventListener('click', () => {
-    if (!currentData || !currentData.video) return;
-    const v = currentData.video;
-    dlVideoTitle.textContent = `"${v.title}" videosunu indirmek için en hızlı yöntemi seçin:`;
+  // ---------------- 5. Video İndirme Modalı (Doğrudan İndirme) ----------------
+  let currentDownloadResolvedUrl = null;
 
-    // SaveFrom / SS link
-    dlOptSavefrom.href = `https://www.ssyoutube.com/watch?v=${v.videoId}`;
-    
-    // NoTube link
-    dlOptNotube.href = `https://notube.net/tr/youtube-app-436?url=https://www.youtube.com/watch?v=${v.videoId}`;
+  async function openVideoDownloadModal(video) {
+    if (!video || !video.videoId) return;
 
+    dlVideoTitle.textContent = `"${video.title}" için MP4 indirme motoru:`;
     videoDlModal.classList.remove('hidden');
+
+    // Reset direct downloader state
+    currentDownloadResolvedUrl = null;
+    dlStatusIndicator.className = 'dl-status-tag preparing';
+    dlStatusIndicator.innerHTML = '<i class="ri-loader-4-line spin"></i> MP4 Çözümleniyor...';
+    directServerDlBtn.disabled = true;
+    directServerDlText.textContent = 'Sunucuda MP4 Hazırlanıyor...';
+    streamDlLink.classList.add('hidden');
+
+    // Embed in-app widget fallback
+    dlIframe.src = `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${video.videoId}&f=mp4`;
+    dlOptSavefrom.href = `https://www.ssyoutube.com/watch?v=${video.videoId}`;
+
+    // Request backend direct stream resolution
+    try {
+      const res = await fetch(`/api/video-download-url?videoId=${video.videoId}&format=360`);
+      const data = await res.json();
+      if (data.success && data.downloadUrl) {
+        currentDownloadResolvedUrl = data.downloadUrl;
+        dlStatusIndicator.className = 'dl-status-tag ready';
+        dlStatusIndicator.innerHTML = '<i class="ri-checkbox-circle-fill"></i> MP4 İndirmeye Hazır!';
+        directServerDlBtn.disabled = false;
+        directServerDlText.textContent = '⚡ Şimdi İndir (360p • MP4)';
+
+        // Setup direct stream alternative
+        streamDlLink.href = `/api/video-stream?videoId=${video.videoId}&title=${encodeURIComponent(video.title)}`;
+        streamDlLink.classList.remove('hidden');
+      } else {
+        throw new Error(data.error || 'İndirme linki oluşturulamadı');
+      }
+    } catch (err) {
+      console.warn('Direct resolve delayed:', err.message);
+      dlStatusIndicator.className = 'dl-status-tag preparing';
+      dlStatusIndicator.innerHTML = '<i class="ri-information-line"></i> Alternatif motorlar aktif';
+      directServerDlText.textContent = 'Aşağıdaki İndirme Seçeneklerini Kullanın';
+    }
+  }
+
+  directServerDlBtn.addEventListener('click', () => {
+    if (currentDownloadResolvedUrl) {
+      const tempA = document.createElement('a');
+      tempA.href = currentDownloadResolvedUrl;
+      tempA.setAttribute('download', 'video.mp4');
+      tempA.setAttribute('target', '_blank');
+      document.body.appendChild(tempA);
+      tempA.click();
+      document.body.removeChild(tempA);
+      showToast('MP4 indirme başlatıldı!');
+    }
+  });
+
+  downloadVideoBtn.addEventListener('click', () => {
+    if (currentData && currentData.video) {
+      openVideoDownloadModal(currentData.video);
+    }
   });
 
   function closeDlModal() {
     videoDlModal.classList.add('hidden');
+    // Clear iframe src to release resources
+    if (dlIframe) dlIframe.src = '';
   }
 
   closeDlModalBtn.addEventListener('click', closeDlModal);
@@ -373,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentStep++;
         steps[currentStep].classList.add('active');
       }
-    }, 900);
+    }, 800);
   }
 
   function stopStepper() {
@@ -456,7 +514,15 @@ document.addEventListener('DOMContentLoaded', () => {
     videoTitle.textContent = video.title;
     videoAuthor.textContent = video.author?.name || 'YouTube';
     videoViews.textContent = video.views ? Number(video.views).toLocaleString('tr-TR') : '10K+';
-    transcriptLines.textContent = transcriptCount || '100+';
+
+    // Transcript Status & Notice
+    if (data.hasRealTranscript === false) {
+      noCaptionNotice.classList.remove('hidden');
+      transcriptLines.textContent = 'Açıklama Metni';
+    } else {
+      noCaptionNotice.classList.add('hidden');
+      transcriptLines.textContent = `${transcriptCount || 100}+ satır`;
+    }
 
     // Linkler
     watchOnYoutubeBtn.href = video.url;
@@ -514,7 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
       timelineSection.classList.add('hidden');
     }
 
-    // 7. Alternatif Videolar (İzle / Ara Dropdown Mekanizması)
+    // 7. Alternatif Videolar (İzle / Ara / İndir Dropdown Mekanizması)
     altVideosList.innerHTML = '';
     if (alternativeVideos && alternativeVideos.length > 0) {
       altVideosCard.classList.remove('hidden');
@@ -529,6 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <img src="${alt.thumbnail}" alt="" class="alt-thumb">
           <div class="alt-info">
             <div class="alt-title">${alt.title}</div>
+            ${alt.hasTranscript ? '<span class="alt-badge-trans"><i class="ri-check-line"></i> Altyazılı</span>' : ''}
           </div>
           <div class="alt-menu-trigger"><i class="ri-more-2-fill"></i></div>
         `;
@@ -541,6 +608,9 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>
           <button type="button" class="dropdown-action-btn search">
             <i class="ri-sparkle-fill"></i> Ara & Özetle
+          </button>
+          <button type="button" class="dropdown-action-btn dl">
+            <i class="ri-download-cloud-2-fill"></i> MP4 İndir
           </button>
         `;
 
@@ -573,6 +643,14 @@ document.addEventListener('DOMContentLoaded', () => {
           queryInput.value = alt.url;
           queryInput.dispatchEvent(new Event('input'));
           searchForm.dispatchEvent(new Event('submit'));
+        });
+
+        const dlBtn = dropdown.querySelector('.dl');
+        dlBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdown.classList.add('hidden');
+          itemBtn.classList.remove('active');
+          openVideoDownloadModal(alt);
         });
 
         container.appendChild(itemBtn);
