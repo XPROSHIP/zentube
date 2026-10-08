@@ -228,7 +228,9 @@
 
                 <!-- Action Buttons: DownSub downloads & Watch -->
                 <div class="download-actions-group">
-                  <span class="group-label">Altyazı İşlemleri:</span>
+                  <span class="group-label">İndirme ve İzleme:</span>
+                  
+                  <!-- Subtitles SRT & TXT -->
                   <div class="btn-grid">
                     <a id="downloadSrtBtn" href="#" class="tool-btn secondary">
                       <i class="ri-file-text-line"></i>
@@ -239,6 +241,13 @@
                       <span>.TXT İndir</span>
                     </a>
                   </div>
+
+                  <!-- Direct Video Downloader Button (MP4 360p / 720p / Ses) -->
+                  <button type="button" id="downloadVideoBtn" class="tool-btn video-dl-btn full-width">
+                    <i class="ri-download-cloud-2-fill"></i>
+                    <span>Videoyu İndir (MP4)</span>
+                    <span class="dl-badge">360p • MP4</span>
+                  </button>
 
                   <a id="watchOnYoutubeBtn" href="#" target="_blank" rel="noopener noreferrer" class="tool-btn primary full-width">
                     <i class="ri-youtube-fill"></i>
@@ -344,6 +353,81 @@
       </div>
     </footer>
 
+  </div>
+
+  <!-- Video Downloader Modal (SaveFrom / SS / Mobile Options) -->
+  <div id="videoDlModal" class="modal-backdrop hidden">
+    <div class="modal-box glass-card dl-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon dl-icon-wrap"><i class="ri-download-cloud-2-fill"></i></div>
+          <h3>YouTube Video İndirme Seçenekleri</h3>
+        </div>
+        <button id="closeDlModalBtn" class="close-icon"><i class="ri-close-line"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-desc" id="dlVideoTitle">
+          İndirmek istediğiniz yöntemi seçin. Mobilde ve masaüstünde ücretsiz, reklamsız tek tıkla çalışır:
+        </p>
+
+        <div class="dl-options-list">
+          
+          <!-- Option 1: SaveFrom / SSYouTube Method (Fastest 360p / 720p MP4) -->
+          <a id="dlOptSavefrom" href="#" target="_blank" rel="noopener noreferrer" class="dl-option-item featured">
+            <div class="dl-opt-icon ss-icon"><i class="ri-flashlight-fill"></i></div>
+            <div class="dl-opt-info">
+              <div class="dl-opt-title">
+                <span>SaveFrom / SS Hızlı İndirici (Önerilen)</span>
+                <span class="badge-rec">Hızlı MP4</span>
+              </div>
+              <div class="dl-opt-desc">360p ve 720p sesli videoyu tek tıkla doğrudan indirin. Mobilde kusursuzdur.</div>
+            </div>
+            <i class="ri-arrow-right-s-line dl-arrow"></i>
+          </a>
+
+          <!-- Option 2: NoTube Downloader -->
+          <a id="dlOptNotube" href="#" target="_blank" rel="noopener noreferrer" class="dl-option-item">
+            <div class="dl-opt-icon notube-icon"><i class="ri-movie-2-line"></i></div>
+            <div class="dl-opt-info">
+              <div class="dl-opt-title">
+                <span>NoTube Alternatif İndirici</span>
+              </div>
+              <div class="dl-opt-desc">Doğrudan MP4 video veya MP3 müzik formatında indirin.</div>
+            </div>
+            <i class="ri-arrow-right-s-line dl-arrow"></i>
+          </a>
+
+          <!-- Option 3: TurboScribe Video Downloader -->
+          <a id="dlOptTurboscribe" href="https://turboscribe.ai/tr/downloader/youtube/video" target="_blank" rel="noopener noreferrer" class="dl-option-item">
+            <div class="dl-opt-icon turbo-icon"><i class="ri-speed-up-line"></i></div>
+            <div class="dl-opt-info">
+              <div class="dl-opt-title">
+                <span>TurboScribe Downloader</span>
+              </div>
+              <div class="dl-opt-desc">Temiz ve sade arayüz ile video ve ses indirme.</div>
+            </div>
+            <i class="ri-arrow-right-s-line dl-arrow"></i>
+          </a>
+
+        </div>
+
+        <!-- Mobile NewPipe / Seal Tip -->
+        <div class="newpipe-tip-box">
+          <i class="ri-smartphone-line"></i>
+          <div>
+            <strong>📱 Mobil İpucu (Android & NewPipe):</strong><br>
+            NewPipe veya Seal uygulamasını kullanıyorsanız, 
+            <button type="button" id="copyVideoUrlForNewpipe" class="inline-copy-link">video linkini kopyalayıp</button> 
+            doğrudan uygulamaya yapıştırarak reklamsız ve en yüksek kalitede indirebilirsiniz.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="closeDlModalFooterBtn" class="tool-btn secondary">Kapat</button>
+      </div>
+    </div>
   </div>
 
   <!-- API Key Modal Dialog -->

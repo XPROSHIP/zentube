@@ -28,7 +28,7 @@ function getBuiltinKey() {
   }
 }
 
-// Check ZEN Easter Egg triggers
+// Check ZEN Easter Egg triggers (Exact user channel match)
 function checkZenEasterEgg(input) {
   if (!input) return false;
   const normalized = input.toLowerCase()
@@ -49,8 +49,38 @@ function checkZenEasterEgg(input) {
            normalized.includes('zen record') || 
            normalized.includes('omerzen') || 
            normalized.includes('ömer erzen') ||
-           normalized.includes('zenpod');
+           normalized.includes('zenpod') ||
+           normalized.includes('zen müzik') ||
+           normalized.includes('zen muzik') ||
+           normalized.includes('zen son parça') ||
+           normalized.includes('zen son parca');
   });
+}
+
+// Dedicated Real-time Channel Scraper for https://www.youtube.com/@ZEN-Record
+async function getZenChannelLatestVideos() {
+  const fallbackIds = ['pdJ3rr-rYVQ', 'T_v9RvqdXBM', 'wQf87xoBxJ0', 'sHfvyMmeP9I', '1VgM0CsVhpQ'];
+  try {
+    const res = await fetch('https://www.youtube.com/@ZEN-Record', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      },
+      signal: AbortSignal.timeout(5000)
+    });
+
+    if (res.ok) {
+      const html = await res.text();
+      const videoMatches = [...html.matchAll(/\/watch\?v=([a-zA-Z0-9_-]{11})/g)].map(m => m[1]);
+      const shortMatches = [...html.matchAll(/\/shorts\/([a-zA-Z0-9_-]{11})/g)].map(m => m[1]);
+      const liveIds = [...new Set([...shortMatches, ...videoMatches])];
+      if (liveIds.length > 0) {
+        return liveIds;
+      }
+    }
+  } catch (err) {
+    console.warn('Real-time channel scrape fallback:', err.message);
+  }
+  return fallbackIds;
 }
 
 // Extract YouTube Video ID from any URL format
@@ -147,9 +177,8 @@ GÖREV: Bu web sitesinin konusunu anlatan ve YouTube'da en alakalı videoyu bula
   }
 }
 
-// Call Google Gemini API - Optimized for Active 2026 production models
+// Call Google Gemini API (2026 Production Models)
 async function callGemini(apiKey, prompt, systemInstruction = '') {
-  // Use verified active production models in priority order
   const models = [
     'gemini-3.8-flash',
     'gemini-3.5-flash-lite',
@@ -177,7 +206,7 @@ async function callGemini(apiKey, prompt, systemInstruction = '') {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(12000) // Fast 12s timeout
+        signal: AbortSignal.timeout(12000)
       });
 
       if (!res.ok) {
@@ -196,12 +225,11 @@ async function callGemini(apiKey, prompt, systemInstruction = '') {
   throw lastError || new Error('Gemini API yanıt vermedi.');
 }
 
-// Smart Search Query Optimizer (Handles typos, "gündem", news, etc.)
+// Smart Search Query Optimizer
 async function optimizeSearchQuery(rawQuery, apiKey) {
   const trimmed = rawQuery.trim();
   const lower = trimmed.toLowerCase();
 
-  // Fast heuristic for "gündem" / "haberler"
   if (lower === 'gündem' || lower === 'haber' || lower === 'haberler' || lower === 'son dakika') {
     return 'Türkiye gündem son dakika haberleri bugün canlı';
   }
@@ -215,9 +243,9 @@ async function optimizeSearchQuery(rawQuery, apiKey) {
 "${trimmed}"
 
 GÖREV:
-1. Yazım hatalarını (typo) düzelt (Örn: "atilal taşla ilgiş sonhaberler" -> "Atilla Taş son haberler", "mesem örğencisen uygun fonksiyon anömsypnlu" -> "MESEM fonksiyon konu anlatımı animasyon").
+1. Yazım hatalarını (typo) düzelt.
 2. "son klibi", "gündem", "en son" gibi ifadeler varsa YouTube'un en taze ve en alakalı videoyu getireceği 3-6 kelimelik çok net arama kelimelerine dönüştür.
-3. Sadece optimize edilmiş arama terimlerini tek satırda yaz, tırnak veya açıklama ekleme.`;
+3. Sadece optimize edilmiş arama terimlerini tek satırda yaz.`;
 
     const optimized = await callGemini(apiKey, prompt, 'Sen arama terimlerini ve yazım hatalarını düzelten bir YouTube arama uzmanısın.');
     return optimized.trim().replace(/^["']|["']$/g, '');
@@ -236,7 +264,7 @@ async function getTranscript(videoId) {
     }
   } catch {}
 
-  for (const lang of ['tr', 'en', 'en-US']) {
+  for (const lang of ['tr', 'en', 'en-US', 'fa', 'ar']) {
     try {
       const transcriptList = await YoutubeTranscript.fetchTranscript(videoId, { lang });
       if (transcriptList && transcriptList.length > 0) {
@@ -248,14 +276,14 @@ async function getTranscript(videoId) {
   throw new Error('Bu videoda altyazı (transcript) bulunamadı veya altyazı erişimi kapalı.');
 }
 
-// Extractive smart fallback summary (runs in 0.05 seconds)
+// Extractive smart fallback summary
 function generateFallbackSummary(transcriptList, videoTitle) {
-  const fullText = transcriptList.map(t => t.text).join(' ');
-  const sentences = fullText.match(/[^.!?]+[.!?]+/g) || [fullText];
+  const fullText = (transcriptList || []).map(t => t.text).join(' ');
+  const sentences = fullText.match(/[^.!?]+[.!?]+/g) || [fullText || videoTitle];
   
   const samplePoints = [];
-  const step = Math.max(1, Math.floor(transcriptList.length / 5));
-  for (let i = 0; i < transcriptList.length; i += step) {
+  const step = Math.max(1, Math.floor((transcriptList || []).length / 5));
+  for (let i = 0; i < (transcriptList || []).length; i += step) {
     if (samplePoints.length >= 5) break;
     const item = transcriptList[i];
     samplePoints.push({
@@ -267,19 +295,19 @@ function generateFallbackSummary(transcriptList, videoTitle) {
 
   return {
     isFallback: true,
-    executive: `"${videoTitle}" başlıklı video için toplam ${transcriptList.length} altyazı satırı başarıyla analiz edildi. Konuşmanın ana fikirleri ve zaman çizelgesi aşağıdadır.`,
+    executive: `"${videoTitle}" başlıklı video için toplam ${(transcriptList || []).length} altyazı satırı başarıyla analiz edildi.`,
     takeaway: 'Videonun tüm altyazısı aşağıda zaman çizelgesine göre bölümlendirilmiştir.',
     keyPoints: [
-      `Toplam altyazı segmenti: ${transcriptList.length}`,
-      `Tahmini konuşma süresi: ${formatTimestamp((transcriptList[transcriptList.length - 1]?.offset || 0) / 1000)}`,
-      sentences[0] ? `Giriş: "${sentences[0].trim().slice(0, 150)}..."` : 'Video başlangıcı incelendi.',
-      sentences[Math.floor(sentences.length / 2)] ? `Gelişme: "${sentences[Math.floor(sentences.length / 2)].trim().slice(0, 150)}..."` : 'Ana konu ele alındı.',
-      sentences[sentences.length - 1] ? `Kapanış: "${sentences[sentences.length - 1].trim().slice(0, 150)}..."` : 'Kapanış bölümü tespit edildi.'
+      `Toplam altyazı segmenti: ${(transcriptList || []).length}`,
+      `Tahmini süre: ${formatTimestamp(((transcriptList && transcriptList[transcriptList.length - 1]?.offset) || 0) / 1000)}`,
+      sentences[0] ? `Giriş: "${sentences[0].trim().slice(0, 150)}..."` : 'Video incelendi.',
+      sentences[Math.floor(sentences.length / 2)] ? `Gelişme: "${sentences[Math.floor(sentences.length / 2)].trim().slice(0, 150)}..."` : 'Ana tema ele alındı.',
+      sentences[sentences.length - 1] ? `Sonuç: "${sentences[sentences.length - 1].trim().slice(0, 150)}..."` : 'Kapanış bölümü tespit edildi.'
     ],
     timeline: samplePoints.map((p, idx) => ({
       timestamp: p.time,
       seconds: p.seconds,
-      title: `${idx + 1}. Önemli Bölüm`,
+      title: `${idx + 1}. Bölüm`,
       description: p.text
     }))
   };
@@ -291,7 +319,7 @@ async function generateAiSummary(transcriptList, video, apiKey) {
   let currentSec = 0;
   let currentBuffer = [];
 
-  for (const item of transcriptList) {
+  for (const item of (transcriptList || [])) {
     const sec = Math.floor(item.offset / 1000);
     currentBuffer.push(item.text);
     if (sec - currentSec >= 45 || currentBuffer.length >= 10) {
@@ -306,19 +334,19 @@ async function generateAiSummary(transcriptList, video, apiKey) {
 
   const fullTranscriptStr = compressed.join('\n').slice(0, 50000);
 
-  const prompt = `Aşağıda YouTube videosuna ait zaman damgalı konuşma metni yer almaktadır.
+  const prompt = `Aşağıda YouTube videosuna ait bilgiler ve zaman damgalı konuşma metni yer almaktadır.
 Video Başlığı: "${video.title}"
 Kanal: "${video.author?.name || 'Bilinmiyor'}"
 Video Linki: "${video.url}"
 
 TRANSKRİPT:
 """
-${fullTranscriptStr}
+${fullTranscriptStr || 'Konuşma metni bulunamadı, video başlığı ve detayları üzerinden analiz yap.'}
 """
 
 GÖREV:
 Bu videoyu profesyonelce, akıcı, zengin ve anlaşılır Türkçe ile analiz et.
-Çıktıyı MUTLAKA ve SADECE aşağıdaki JSON formatında ver (kod bloğu etiketleri dışında hiçbir metin yazma):
+Çıktıyı MUTLAKA ve SADECE aşağıdaki JSON formatında ver:
 
 {
   "executive": "Videonun 2-3 cümlelik çok güçlü ana fikri",
@@ -340,8 +368,7 @@ Bu videoyu profesyonelce, akıcı, zengin ve anlaşılır Türkçe ile analiz et
   ]
 }`;
 
-  const rawResult = await callGemini(apiKey, prompt, 'Sen kıdemli bir video analiz ve özetleme asistanısın. Yanıtlarını her zaman geçerli JSON olarak üretirsin.');
-  
+  const rawResult = await callGemini(apiKey, prompt, 'Sen video analiz ve özetleme asistanısın. Yanıtlarını geçerli JSON olarak üretirsin.');
   const cleaned = rawResult.replace(/```json/gi, '').replace(/```/g, '').trim();
   try {
     const parsed = JSON.parse(cleaned);
@@ -379,29 +406,59 @@ app.post('/api/process', async (req, res) => {
     let optimizedQuery = trimmedInput;
 
     if (isZenEasterEgg) {
-      // Special Easter Egg: Search specifically for ZEN-Record channel content
-      optimizedQuery = 'ZEN-Record Ömer Erzen şarkılar müzik';
-      const searchResult = await ytSearch(optimizedQuery);
-      const candidates = searchResult.videos || [];
-      
-      // Prefer videos from ZEN-Record if available
-      chosenVideo = candidates.find(v => v.author?.name?.toLowerCase().includes('zen')) || candidates[0];
-      
-      if (chosenVideo) {
-        try {
-          transcript = await getTranscript(chosenVideo.videoId);
-        } catch {
-          // If no transcript on 1st, try next
-          for (let i = 1; i < Math.min(candidates.length, 5); i++) {
-            try {
-              transcript = await getTranscript(candidates[i].videoId);
-              chosenVideo = candidates[i];
-              break;
-            } catch {}
-          }
-        }
+      // Direct Live Resolution from user's official channel: https://www.youtube.com/@ZEN-Record
+      const zenVideoIds = await getZenChannelLatestVideos();
+      optimizedQuery = 'ZEN-Record (@ZEN-Record Resmi Kanalı)';
+
+      // Resolve primary latest video
+      const primaryId = zenVideoIds[0] || 'pdJ3rr-rYVQ';
+      try {
+        const vInfo = await ytSearch({ videoId: primaryId });
+        chosenVideo = {
+          videoId: primaryId,
+          title: vInfo.title || 'Destân-ı Zîşân',
+          url: `https://www.youtube.com/watch?v=${primaryId}`,
+          thumbnail: vInfo.thumbnail || `https://i.ytimg.com/vi/${primaryId}/hqdefault.jpg`,
+          duration: vInfo.duration?.timestamp || '2:30',
+          author: { name: 'ZEN RECORDS', url: 'https://www.youtube.com/@ZEN-Record' },
+          views: vInfo.views || 250,
+          ago: vInfo.ago || 'Yeni'
+        };
+      } catch {
+        chosenVideo = {
+          videoId: primaryId,
+          title: 'Destân-ı Zîşân',
+          url: `https://www.youtube.com/watch?v=${primaryId}`,
+          thumbnail: `https://i.ytimg.com/vi/${primaryId}/hqdefault.jpg`,
+          duration: '2:30',
+          author: { name: 'ZEN RECORDS', url: 'https://www.youtube.com/@ZEN-Record' }
+        };
       }
-      alternativeVideos = candidates.filter(v => v.videoId !== chosenVideo?.videoId).slice(0, 3);
+
+      // Try transcript on primary video
+      try {
+        transcript = await getTranscript(primaryId);
+      } catch {
+        transcript = [
+          { text: 'ZEN RECORDS — Özgün Müzik Prodüksiyonu & Eser', offset: 0, duration: 3000 }
+        ];
+      }
+
+      // Populate alternative videos directly from @ZEN-Record's remaining latest videos
+      const altIds = zenVideoIds.slice(1, 4);
+      alternativeVideos = [];
+      for (const altId of altIds) {
+        try {
+          const altInfo = await ytSearch({ videoId: altId });
+          alternativeVideos.push({
+            videoId: altId,
+            title: altInfo.title || 'ZEN-Record Eseri',
+            url: `https://www.youtube.com/watch?v=${altId}`,
+            thumbnail: altInfo.thumbnail || `https://i.ytimg.com/vi/${altId}/hqdefault.jpg`
+          });
+        } catch {}
+      }
+
     } else if (directVideoId) {
       // Direct YouTube / Downsub URL mode
       try {
@@ -429,14 +486,13 @@ app.post('/api/process', async (req, res) => {
 
       transcript = await getTranscript(directVideoId);
     } else {
-      // Check if it's an external news/article website URL
+      // General web URL or topic search
       if (isExternalUrl) {
         optimizedQuery = await extractTopicFromWebpage(trimmedInput, apiKey);
       } else if (apiKey) {
         optimizedQuery = await optimizeSearchQuery(trimmedInput, apiKey);
       }
 
-      // Search on YouTube
       const searchResult = await ytSearch(optimizedQuery);
       const candidates = (searchResult.videos || []).slice(0, 6);
 
@@ -444,7 +500,6 @@ app.post('/api/process', async (req, res) => {
         return res.status(404).json({ error: 'Aramanızla ilgili YouTube videosu bulunamadı.' });
       }
 
-      // Find candidate with available transcripts
       let foundIndex = -1;
       for (let i = 0; i < Math.min(candidates.length, 4); i++) {
         try {
@@ -467,21 +522,15 @@ app.post('/api/process', async (req, res) => {
       alternativeVideos = candidates.filter((_, idx) => idx !== foundIndex).slice(0, 3);
     }
 
-    // AI Summarization with fast fallback guarantee
+    // AI Summarization
     let summaryData;
-    if (transcript && chosenVideo) {
+    if (chosenVideo) {
       try {
         summaryData = await generateAiSummary(transcript, chosenVideo, apiKey);
       } catch (e) {
         console.warn('AI summary error, falling back fast:', e.message);
         summaryData = generateFallbackSummary(transcript, chosenVideo.title);
       }
-    } else {
-      summaryData = {
-        executive: 'Bu videoda metin analizi tamamlandı.',
-        keyPoints: [],
-        timeline: []
-      };
     }
 
     const rawContinuousText = (transcript || []).map(t => t.text.replace(/\n/g, ' ').trim()).join(' ');
@@ -558,6 +607,6 @@ app.listen(PORT, () => {
   console.log(`\n======================================================`);
   console.log(`🚀 ZEN | YouTube | Arama Aktif!`);
   console.log(`📡 URL: http://localhost:${PORT}`);
-  console.log(`🔑 Gemini 3.8 Flash & Easter Egg Entegrasyonu: Aktif`);
+  console.log(`🎵 @ZEN-Record Doğrudan Kanal Çözümleme: Aktif`);
   console.log(`======================================================\n`);
 });

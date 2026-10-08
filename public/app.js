@@ -43,7 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const transcriptLines = document.getElementById('transcriptLines');
   const downloadSrtBtn = document.getElementById('downloadSrtBtn');
   const downloadTxtBtn = document.getElementById('downloadTxtBtn');
+  const downloadVideoBtn = document.getElementById('downloadVideoBtn');
   const watchOnYoutubeBtn = document.getElementById('watchOnYoutubeBtn');
+
+  // Video Downloader Modal Elements
+  const videoDlModal = document.getElementById('videoDlModal');
+  const closeDlModalBtn = document.getElementById('closeDlModalBtn');
+  const closeDlModalFooterBtn = document.getElementById('closeDlModalFooterBtn');
+  const dlVideoTitle = document.getElementById('dlVideoTitle');
+  const dlOptSavefrom = document.getElementById('dlOptSavefrom');
+  const dlOptNotube = document.getElementById('dlOptNotube');
+  const copyVideoUrlForNewpipe = document.getElementById('copyVideoUrlForNewpipe');
 
   // Raw Text Toggle ("Metni Oku")
   const toggleRawTextBtn = document.getElementById('toggleRawTextBtn');
@@ -107,11 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
     typewriterText.textContent = currentPhrase.substring(0, charIndex);
 
     if (!isDeleting && charIndex === currentPhrase.length) {
-      // Kelime bittiğinde durakla
       typeSpeed = 2200;
       isDeleting = true;
     } else if (isDeleting && charIndex === 0) {
-      // Silme bittiğinde sıradaki cümleye geç
       isDeleting = false;
       phraseIndex = (phraseIndex + 1) % phrases.length;
       typeSpeed = 400;
@@ -236,7 +244,39 @@ document.addEventListener('DOMContentLoaded', () => {
     apiModal.classList.add('hidden');
   });
 
-  // ---------------- 5. Textarea ve Arama Olayları ----------------
+  // ---------------- 5. Video İndirme Modalı ----------------
+  downloadVideoBtn.addEventListener('click', () => {
+    if (!currentData || !currentData.video) return;
+    const v = currentData.video;
+    dlVideoTitle.textContent = `"${v.title}" videosunu indirmek için en hızlı yöntemi seçin:`;
+
+    // SaveFrom / SS link
+    dlOptSavefrom.href = `https://www.ssyoutube.com/watch?v=${v.videoId}`;
+    
+    // NoTube link
+    dlOptNotube.href = `https://notube.net/tr/youtube-app-436?url=https://www.youtube.com/watch?v=${v.videoId}`;
+
+    videoDlModal.classList.remove('hidden');
+  });
+
+  function closeDlModal() {
+    videoDlModal.classList.add('hidden');
+  }
+
+  closeDlModalBtn.addEventListener('click', closeDlModal);
+  closeDlModalFooterBtn.addEventListener('click', closeDlModal);
+  videoDlModal.addEventListener('click', (e) => {
+    if (e.target === videoDlModal) closeDlModal();
+  });
+
+  copyVideoUrlForNewpipe.addEventListener('click', () => {
+    if (!currentData || !currentData.video) return;
+    navigator.clipboard.writeText(currentData.video.url).then(() => {
+      showToast('Video bağlantısı kopyalandı! NewPipe / Seal içine yapıştırabilirsiniz.');
+    });
+  });
+
+  // ---------------- 6. Textarea ve Arama Olayları ----------------
   queryInput.addEventListener('input', () => {
     queryInput.style.height = 'auto';
     queryInput.style.height = Math.min(queryInput.scrollHeight, 140) + 'px';
@@ -269,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ---------------- 6. Metni Oku (Açılır / Kapanır Accordion) ----------------
+  // ---------------- 7. Metni Oku (Açılır / Kapanır Accordion) ----------------
   toggleRawTextBtn.addEventListener('click', () => {
     const isHidden = rawTextContainer.classList.contains('hidden');
     if (isHidden) {
@@ -295,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ---------------- 7. Error & Toast ----------------
+  // ---------------- 8. Error & Toast ----------------
   function showError(title, msg) {
     errorTitle.textContent = title;
     errorMessage.textContent = msg;
@@ -317,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2800);
   }
 
-  // ---------------- 8. Stepper Animasyonu ----------------
+  // ---------------- 9. Stepper Animasyonu ----------------
   let stepInterval = null;
   function startStepper() {
     steps.forEach((s, i) => {
@@ -340,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (stepInterval) clearInterval(stepInterval);
   }
 
-  // ---------------- 9. Form Gönderimi ----------------
+  // ---------------- 10. Form Gönderimi ----------------
   searchForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const query = queryInput.value.trim();
@@ -394,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ---------------- 10. Sonuçları Ekrana Basma ----------------
+  // ---------------- 11. Sonuçları Ekrana Basma ----------------
   function renderResults(data) {
     const { video, summary, optimizedQuery, originalQuery, transcriptCount, rawContinuousText, alternativeVideos, isExternalWebUrl } = data;
 
@@ -493,7 +533,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="alt-menu-trigger"><i class="ri-more-2-fill"></i></div>
         `;
 
-        // Mini Dropdown: İzle vs Ara
         const dropdown = document.createElement('div');
         dropdown.className = 'alt-action-dropdown hidden';
         dropdown.innerHTML = `
@@ -505,10 +544,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </button>
         `;
 
-        // Tıklayınca hemen aramaya geçmesin, dropdown açılsın/kapansın
         itemBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          // Diğer açık dropdownları kapat
           document.querySelectorAll('.alt-action-dropdown').forEach(d => {
             if (d !== dropdown) d.classList.add('hidden');
           });
@@ -520,7 +557,6 @@ document.addEventListener('DOMContentLoaded', () => {
           itemBtn.classList.toggle('active');
         });
 
-        // "İzle" butonu: Ekrandaki verileri silmeden yeni YouTube sekmesinde açar
         const watchBtn = dropdown.querySelector('.watch');
         watchBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -529,7 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
           itemBtn.classList.remove('active');
         });
 
-        // "Ara & Özetle" butonu: O videoyu analiz eder
         const searchBtn = dropdown.querySelector('.search');
         searchBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -553,13 +588,13 @@ document.addEventListener('DOMContentLoaded', () => {
     resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Sayfa boşluğuna tıklayınca açık olan dropdownları kapat
+  // Boşluğa tıklayınca dropdownları kapat
   document.addEventListener('click', () => {
     document.querySelectorAll('.alt-action-dropdown').forEach(d => d.classList.add('hidden'));
     document.querySelectorAll('.alt-video-item').forEach(b => b.classList.remove('active'));
   });
 
-  // ---------------- 11. Kopyalama & Markdown Dışa Aktarım ----------------
+  // ---------------- 12. Kopyalama & Markdown Dışa Aktarım ----------------
   copySummaryBtn.addEventListener('click', () => {
     if (!currentData) return;
     const { video, summary } = currentData;
